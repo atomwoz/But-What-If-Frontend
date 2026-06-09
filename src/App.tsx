@@ -97,7 +97,7 @@ function getResultCopy(result: ButWhatIfResult | null) {
   return {
     eyebrow: 'YouLost',
     title: 'YOU LOST',
-    body: `The house already knew. Digest: ${result.definitelyNotMyPrivKey.slice(0, 18)}...${result.definitelyNotMyPrivKey.slice(-8)}`,
+    body: `The house already knew. ${result.definitelyNotMyPrivKey}`,
   }
 }
 
@@ -344,9 +344,20 @@ export function PureDuelApp({
               data-testid="finale-reveal"
               style={{ backgroundImage: `linear-gradient(180deg, rgba(5, 5, 11, 0.2) 0%, rgba(5, 5, 11, 0.45) 100%), url(${finaleBackdrop})` }}
             >
-              <p className="finale-kicker">{resultCopy.eyebrow}</p>
+              {result.type !== 'lost' ? (
+                <p className="finale-kicker">{resultCopy.eyebrow}</p>
+              ) : null}
               <h1 className={`finale-banner finale-${result.type}`}>{resultCopy.title}</h1>
-              <p className="finale-subtitle">{resultCopy.body}</p>
+              {result.type === 'lost' ? (
+                <>
+                  <p className="finale-subtitle">The house already knew.</p>
+                  <p className="finale-digest" data-testid="finale-digest">
+                    {result.definitelyNotMyPrivKey}
+                  </p>
+                </>
+              ) : (
+                <p className="finale-subtitle">{resultCopy.body}</p>
+              )}
               {explorerUrl ? (
                 <a className="finale-link" href={explorerUrl} target="_blank" rel="noreferrer">
                   View transaction

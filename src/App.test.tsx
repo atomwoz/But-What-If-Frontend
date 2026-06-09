@@ -177,6 +177,9 @@ describe('PureDuelApp', () => {
 
     expect(screen.getByTestId('finale-reveal')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /you lost/i })).toBeInTheDocument()
+    expect(screen.getByText('The house already knew.')).toBeInTheDocument()
+    expect(screen.getByTestId('finale-digest')).toHaveTextContent(`0x${'12'.repeat(32)}`)
+    expect(screen.queryByText('YouLost')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument()
   })
 
