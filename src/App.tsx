@@ -23,10 +23,12 @@ import {
   getButWhatIfTxUrl,
 } from './networks'
 import { getGunOpacity, getNextPhaseAfterInput, isValidLuckyNumber, type DuelPhase } from './duelFlow'
+import { publicAsset } from './publicAsset'
 
-const revolverVideo = '/assets/revolver-shot.mp4'
-const slotVideo = '/assets/slot-machine.mp4'
-const tableImage = '/assets/table-empty.jpeg'
+const revolverVideo = publicAsset('assets/revolver-shot.mp4')
+const slotVideo = publicAsset('assets/slot-machine.mp4')
+const tableImage = publicAsset('assets/table-empty.jpeg')
+const finaleBackdrop = publicAsset('assets/finale-backdrop.jpeg')
 
 function logDuel(event: string, payload?: Record<string, unknown>) {
   console.log(`[ButWhatIf] ${event}`, payload ?? {})
@@ -337,7 +339,11 @@ export function PureDuelApp({
               onEnded={handleFinaleEnded}
             />
           ) : (
-            <div className="finale-reveal" data-testid="finale-reveal">
+            <div
+              className="finale-reveal"
+              data-testid="finale-reveal"
+              style={{ backgroundImage: `linear-gradient(180deg, rgba(5, 5, 11, 0.2) 0%, rgba(5, 5, 11, 0.45) 100%), url(${finaleBackdrop})` }}
+            >
               <p className="finale-kicker">{resultCopy.eyebrow}</p>
               <h1 className={`finale-banner finale-${result.type}`}>{resultCopy.title}</h1>
               <p className="finale-subtitle">{resultCopy.body}</p>
