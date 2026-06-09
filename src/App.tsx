@@ -122,8 +122,8 @@ export function PureDuelApp({
 }: PureDuelAppProps) {
   const [luckyNumber, setLuckyNumber] = useState('')
   const [manualPhase, setManualPhase] = useState<DuelPhase>('idle')
-  const [finalePhase, setFinalePhase] = useState<'idle' | 'shooting' | 'revealed'>('idle')
-  const previousResultRef = useRef<ButWhatIfResult | null>(null)
+  const [finaleReveal, setFinaleReveal] = useState(false)
+  const [finaleDismissed, setFinaleDismissed] = useState(false)
   const shotVideoRef = useRef<HTMLVideoElement>(null)
   const slotVideoRef = useRef<HTMLVideoElement>(null)
 
@@ -142,12 +142,12 @@ export function PureDuelApp({
           ? 'shooting'
           : inputPhase
   const isCasinoLoop = phase === 'shooting' || phase === 'pending'
-  const isFinaleActive = finalePhase !== 'idle'
+  const isFinaleActive = Boolean(result) && !finaleDismissed
 
   useEffect(() => {
     logDuel('ui state', {
       phase,
-      finalePhase,
+      finaleReveal,
       luckyNumber,
       isConnected,
       isAwaitingSignature,
@@ -156,21 +156,7 @@ export function PureDuelApp({
       hasResult: Boolean(result),
       errorMessage,
     })
-  }, [errorMessage, finalePhase, isAwaitingSignature, isConnected, isPending, luckyNumber, phase, result, txHash])
-
-  useEffect(() => {
-    if (!result) {
-      setFinalePhase('idle')
-      previousResultRef.current = null
-      return
-    }
-
-    if (!previousResultRef.current) {
-      setFinalePhase('shooting')
-    }
-
-    previousResultRef.current = result
-  }, [result])
+  }, [errorMessage, finaleReveal, isAwaitingSignature, isConnected, isPending, luckyNumber, phase, result, txHash])
 
   useEffect(() => {
     const slot = slotVideoRef.current
@@ -194,22 +180,23 @@ export function PureDuelApp({
   }, [isCasinoLoop, isFinaleActive])
 
   useEffect(() => {
-    if (finalePhase !== 'shooting') return
+    if (!isFinaleActive || finaleReveal) return
 
     const shot = shotVideoRef.current
     if (!shot) return
 
     shot.currentTime = 0
     safePlay(shot)
-  }, [finalePhase])
+  }, [finaleReveal, isFinaleActive])
 
   function handleFinaleEnded() {
-    setFinalePhase('revealed')
+    setFinaleReveal(true)
   }
 
   function handleTryAgain() {
     logDuel('try again clicked')
-    setFinalePhase('idle')
+    setFinaleReveal(false)
+    setFinaleDismissed(true)
     setManualPhase('idle')
     onTryAgain()
   }
@@ -224,6 +211,9 @@ export function PureDuelApp({
     })
 
     if (!canUseTrigger) return
+
+    setFinaleDismissed(false)
+    setFinaleReveal(false)
 
     if (!isConnected) {
       logDuel('wallet connect requested from trigger')
@@ -335,7 +325,7 @@ export function PureDuelApp({
 
       {isFinaleActive && result ? (
         <div className="finale-overlay" data-testid="finale-overlay">
-          {finalePhase === 'shooting' ? (
+          {!finaleReveal ? (
             <video
               ref={shotVideoRef}
               className="finale-video"
@@ -369,8 +359,9 @@ export function PureDuelApp({
 
 export default function App() {
   const [submittedHash, setSubmittedHash] = useState<Hex>()
-  const [activeChainId, setActiveChainId] = useState(defaultButWhatIfChainId)
+  const [preferredChainId, setPreferredChainId] = useState<number>(defaultButWhatIfChainId)
   const { address, chainId, isConnected, isConnecting } = useAccount()
+  const activeChainId = isConnected && chainId ? chainId : preferredChainId
   const { connect, connectors, isPending: isConnectPending, error: connectError } = useConnect()
   const { disconnect } = useDisconnect()
   const { switchChain, isPending: isSwitchPending, error: switchError } = useSwitchChain()
@@ -400,12 +391,6 @@ export default function App() {
   const errorMessage =
     connectError?.message ?? switchError?.message ?? writeError?.message ?? receiptError?.message
   const connector = connectors[0]
-
-  useEffect(() => {
-    if (isConnected && chainId) {
-      setActiveChainId(chainId)
-    }
-  }, [chainId, isConnected])
 
   useEffect(() => {
     logDuel('wagmi state', {
@@ -458,7 +443,7 @@ export default function App() {
       return
     }
 
-    setActiveChainId(nextChainId)
+    setPreferredChainId(nextChainId)
   }
 
   function handleTryAgain() {
